@@ -1,5 +1,5 @@
 require('dotenv').config(); // se instala con npm install dotenv
-//async errors
+require('express-async-errors');
 
 const express = require('express');
 const app = express();
@@ -38,3 +38,10 @@ const start = async () => {
 };
 
 start();
+
+// "express-async-errors"
+// para no tener q hacer al "asyncWrapper" para envolver a las funciones de los controladores ( q me evitava ponerle a todas con try-catch )
+// se importa aquí en app.js
+
+// con este package, si salta un error en algun controlador => se va a poder acceder al error en el "custom errorhandler" q está en /middleware/error-handler.js
+// ( serian los errores q tira mongoose )
