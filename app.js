@@ -31,7 +31,7 @@ const port = process.env.PORT || 3000;
 const start = async () => {
    try {
       await connectDB(process.env.MONGO_URI);
-      app.listen(port, console.log(`Server listening in port ${port}...👍`));
+      app.listen(port, console.log(`Listening in port ${port}...👍`));
    } catch (error) {
       console.log(error);
    }
@@ -40,7 +40,7 @@ const start = async () => {
 start();
 
 // "express-async-errors"
-// para no tener q hacer al "asyncWrapper" para envolver a las funciones de los controladores ( q me evitava ponerle a todas con try-catch )
+// para no tener q hacer al "asyncWrapper" para envolver a las funciones de los controladores ( q me evitaba ponerle a todas con try-catch )
 // se importa aquí en app.js
 
 // con este package, si salta un error en algun controlador => se va a poder acceder al error en el "custom errorhandler" q está en /middleware/error-handler.js
