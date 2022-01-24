@@ -1,7 +1,10 @@
 const Product = require('../models/product');
 
 const getAllProductsStatic = async (req, res) => {
-   const products = await Product.find({}); //para q devuelva todos
+   const products = await Product.find({ price: { $gt: 30, $lt: 200 } }).sort(
+      'price'
+   );
+   // const products = await Product.find({}).sort('price').limit(23).skip(5);
    // const products = await Product.find({ featured: true }); // devuelve los q tengan "featured: true"
    res.status(200).json({ nbHits: products.length, products });
 }; // 🌀 el find({})
@@ -9,7 +12,7 @@ const getAllProductsStatic = async (req, res) => {
 const getAllProducts = async (req, res) => {
    // console.log(req.query); {name:'albany',featured:'true'} ó {featured:'true'}
    // 🔰
-   const { featured, company, name, sort } = req.query;
+   const { featured, company, name, sort, fields, numericFilters } = req.query;
    const queryObject = {};
 
    if (featured) {
@@ -21,11 +24,38 @@ const getAllProducts = async (req, res) => {
    if (name) {
       queryObject.name = { $regex: name, $options: 'i' }; // 🧐💫
    }
+   if (numericFilters) {
+      // console.log(numericFilters); // price>40,rating>=4
+      const operatorMap = {
+         '>': '$gt',
+         '>=': '$gte',
+         '=': '$eq',
+         '<': '$lt',
+         '<=': '$lte',
+      };
+      const regEx = /\b(<|>|>=|=|<|<=)\b/g;
+      let filters = numericFilters.replace(
+         regEx,
+         match => `-${operatorMap[match]}-`
+      );
+      // console.log(numericFilters); // price>40,rating>=4
+      // console.log(filters); // price-$gt-40,rating-$gte-4
 
-   console.log(queryObject);
+      const options = ['price', 'rating']; // solo los q tienen valores numéricos
+      filters = filters.split(',').forEach(item => {
+         const [field, operator, value] = item.split('-');
+
+         if (options.includes(field)) {
+            queryObject[field] = { [operator]: Number(value) };
+         }
+      });
+      // console.log(numericFilters); // price>40,rating>=4
+      // console.log(queryObject); // { price: { '$gt': 40 }, rating: { '$gte': 4 } }
+   }
+
    // const products = await Product.find(queryObject);💥💥
    let result = Product.find(queryObject);
-
+   //----- sort
    if (sort) {
       const sortList = sort.split(',').join(' ');
       result = result.sort(sortList);
@@ -33,13 +63,28 @@ const getAllProducts = async (req, res) => {
       // si no se especifica un sort => pone x default x orden de creación
       result = result.sort('createdAt');
    }
+   //----- field
+   if (fields) {
+      const fieldsList = fields.split(',').join(' ');
+      result = result.select(fieldsList);
+   }
 
+   //pagination
+   const page = Number(req.query.page) || 1;
+   const limit = Number(req.query.limit) || 10;
+   const skip = (page - 1) * limit;
+
+   result = result.skip(skip).limit(limit);
+
+   //resultado
    const products = await result;
 
    res.status(200).json({ nbHits: products.length, products });
 };
 
 module.exports = { getAllProductsStatic, getAllProducts };
+
+// el query param "fiels" se va a pasar para distinguir cuando el usuario quiera q se muestren solo "esos" campos ( lo q ponga en field )
 
 // si mandamos en el query una propiedad q no existe, como buscar por { page: 2 }, q seria pasar .../products/?page=2
 // => me devueve un []
@@ -86,7 +131,7 @@ module.exports = { getAllProductsStatic, getAllProducts };
 
 //        const products = await result;
 
-// el Product.find() entrega un query-object, en el original se espera a q se resuelva y se mete en products ( pero ya es solo una lista, xq el await hace q se esepere hasta q se resuelva en una lista para asignarlo a products )
+// el Product.find() entrega un query-object ( query instance segun el artículo de abajo ), en el original se espera a q se resuelva y se mete en products ( pero ya es solo una lista, xq el await hace q se esepere hasta q se resuelva en una lista para asignarlo a products )
 // el .sort() se tiene q poner en el query-object, x esto no se puede poner en el products así no más, xq es una lista.
 // si no hay "sort" de la destructuración => no se le puede poner el .sort() vacio
 // x estas 2 cosas es q hay q hacer el show de pasar por el "result" primero, que va a tener el "query-object" q entrega el find, ya q no se ocupo "await" y si es q existe el "sort" => se le pone a este "result" q si es un "query-object", y ya abajo en la última linea se espera a q se resuelva el "query-object" en la lista para así asignarselo a products
