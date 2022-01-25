@@ -20,8 +20,6 @@ app.get('/', (req, res) => {
 // routes in router
 app.use('/api/v1/products', productsRouter);
 
-// products routes
-
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 

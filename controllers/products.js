@@ -10,7 +10,8 @@ const getAllProductsStatic = async (req, res) => {
 }; // 🌀 el find({})
 
 const getAllProducts = async (req, res) => {
-   // console.log(req.query); {name:'albany',featured:'true'} ó {featured:'true'}
+   // .../products/?featured=true&name=chair
+   // console.log(req.query); {name:'chair',featured:'true'} ó {featured:'true'}
    // 🔰
    const { featured, company, name, sort, fields, numericFilters } = req.query;
    const queryObject = {};
@@ -53,9 +54,9 @@ const getAllProducts = async (req, res) => {
       // console.log(queryObject); // { price: { '$gt': 40 }, rating: { '$gte': 4 } }
    }
 
-   // const products = await Product.find(queryObject);💥💥
+   // const products = await Product.find(queryObject);💥💥 este se usaba cuando no tenia q encadenar .sort() o .select() o lo q sea
    let result = Product.find(queryObject);
-   //----- sort
+   //----- sort 🥝
    if (sort) {
       const sortList = sort.split(',').join(' ');
       result = result.sort(sortList);
@@ -64,6 +65,7 @@ const getAllProducts = async (req, res) => {
       result = result.sort('createdAt');
    }
    //----- field
+   // .../products/?fields=name,price
    if (fields) {
       const fieldsList = fields.split(',').join(' ');
       result = result.select(fieldsList);
@@ -84,12 +86,18 @@ const getAllProducts = async (req, res) => {
 
 module.exports = { getAllProductsStatic, getAllProducts };
 
-// el query param "fiels" se va a pasar para distinguir cuando el usuario quiera q se muestren solo "esos" campos ( lo q ponga en field )
+// el query param "fields" se va a pasar para distinguir cuando el usuario quiera q se muestren solo "esos" campos ( lo q ponga en field ".../products/?fields=name,price")
 
 // si mandamos en el query una propiedad q no existe, como buscar por { page: 2 }, q seria pasar .../products/?page=2
 // => me devueve un []
 // en la version nueva de mongoose, si se manda una prop q no existe en el schema => esta es ignorada
-// 🔰 para pasar en el método q busca (Product.find) solo las propiedades q SI existen en nuestro schema ( y evitar q x ese error nos devuelva [] ) destructuramos el req.query, y entre las llaves ( {} ) solo ponemos las props q si existen ( más las q vamos a controlar como sort y esos ) y esas las pasamos al objeto q metemos en la busqueda en la DB
+
+// 🥝
+// sort by "field" ascending and "test" descending
+// query.sort({ field: 'asc', test: -1 });
+// query.sort('field -test');
+
+// 🔰 para pasar en el método q busca (Product.find) solo las propiedades q SI existen en nuestro schema ( y evitar q x ese error nos devuelva [] ) destructuramos el req.query, y entre las llaves ( {} ) solo ponemos las props q si existen ( más las q vamos a controlar como sort y esas ) y esas las pasamos al objeto q metemos en la busqueda en la DB
 
 // 🌀
 // como el modelo se define con "module.exports = mongoose.model('Product', productSchema)" => va a buscar a todos los items en "products" ( todos xq está vacio el find({}))

@@ -5,7 +5,7 @@ const {
    getAllProductsStatic,
    getAllProducts,
 } = require('../controllers/products');
-
+// '/api/v1/products'
 router.route('/').get(getAllProducts);
 router.route('/static').get(getAllProductsStatic);
 
